@@ -1,4 +1,4 @@
-name: CI on Master Branch
+name: CI on Satging Branch for application service
 
 on:
   push:
@@ -8,15 +8,39 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    env:
+      PROJECT_ID: my-gcp-project
+      REGION: asia-south1                     
+      ARTIFACT_REPO: my-artifact-repo
+      IMAGE_NAME: staging-application-service
+      TAG: latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run a one-line script
-        run: echo "This workflow runs on push to staging!"
-
       - name: Run a multi-line script
         run: |
-          echo "Performing some build steps..."
-          echo "This is a second line."
+          echo "The github pipeline is working"
+      #BUILD STEP   
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        run: |
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{env.PROJECT_ID}}/${{ env.ARTIFACT_REPO}}/${{ env.IMAGE_NAME}}:${{ env.TAG }} .
+      #AUTHENTICATION STEP
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      #PUSH STEP
+      - name: Push Docker Image to Artifact Registry
+        uses: google-github-actions/artifact-registry-docker-push@v1
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID}}/${{ env.ARTIFACT_REPO}}/${{ env.IMAGE_NAME}}:${{ env.TAG }}
+      #Deploy STEP
+      - name: Deploy to GKE
+        uses: google-github-actions/deploy-gke@v1
+        with:
+          cluster_name: staging-cluster
+          location: asia-south1-a
+          run: |
+            kubectl rollout restart deployment staging-application-deployment -n staging
