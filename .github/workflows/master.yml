@@ -1,0 +1,22 @@
+name: CI on Master Branch
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run a one-line script
+        run: echo "This workflow runs on push to master!"
+
+      - name: Run a multi-line script
+        run: |
+          echo "Performing some build steps..."
+          echo "This is a second line."
